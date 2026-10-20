@@ -1,0 +1,29 @@
+# Virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# OneDrive conflict copies
+*-SharkKaal*
+*conflicted copy*
+
+# IDE settings
+.idea/
+*.swp
+*.swo
+
+# Project data / cache
+.fastf1-cache/
+.pytest_cache/
+data/external/cache/
+data/cache/
+computed_data/
+*.gz
+

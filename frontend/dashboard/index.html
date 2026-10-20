@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RacePulse — Formula 1 Data & Analytics</title>
+    <meta name="description"
+        content="Complete Formula 1 data platform: race results, qualifying, tyre strategy, championship standings, telemetry analysis, and live timing from 2015 to present. Powered by FastF1, Jolpica-F1 & OpenF1 API.">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+    <!-- LOADING OVERLAY -->
+    <div id="loading">
+        <div class="loader-content">
+            <div class="spinner-ring">
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+            <div class="loader-text">LOADING DATA<span class="dots"></span></div>
+            <div class="loader-sub" id="loadingStatus">Connecting to F1 data feed...</div>
+        </div>
+    </div>
+
+    <!-- TOP BAR -->
+    <header id="topBar">
+        <div class="header-left">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 40 40" width="36" height="36">
+                        <path d="M20 2L38 20L20 38L2 20Z" fill="none" stroke="#e10600" stroke-width="2.5" />
+                        <path d="M20 8L32 20L20 32L8 20Z" fill="#e10600" opacity="0.3" /><text x="20" y="24"
+                            text-anchor="middle" fill="#e10600" font-size="12" font-family="Orbitron"
+                            font-weight="900">RP</text>
+                    </svg>
+                </div>
+                <div class="logo-text">RACE<span>PULSE</span></div>
+            </div>
+            <div class="logo-divider"></div>
+            <nav class="nav-tabs" id="navTabs">
+                <button class="nav-tab active" data-view="race">
+                    <span class="tab-icon">🏁</span> RACE
+                </button>
+                <button class="nav-tab" data-view="strategy">
+                    <span class="tab-icon">🔧</span> STRATEGY
+                </button>
+                <button class="nav-tab" data-view="analysis">
+                    <span class="tab-icon">📊</span> ANALYSIS
+                </button>
+                <button class="nav-tab" data-view="championship">
+                    <span class="tab-icon">🏆</span> CHAMPIONSHIP
+                </button>
+                <button class="nav-tab" data-view="telemetry">
+                    <span class="tab-icon">📡</span> TELEMETRY
+                </button>
+                <button class="nav-tab" data-view="replay">
+                    <span class="tab-icon">🏎️</span> REPLAY
+                </button>
+                <button class="nav-tab" data-view="live">
+                    <span class="tab-icon">🔴</span><span class="live-dot"></span> LIVE
+                </button>
+            </nav>
+        </div>
+        <div class="header-right">
+            <div class="session-selector">
+                <div class="sel-group">
+                    <label>SEASON</label>
+                    <select id="selYear">
+                        <option value="2026" selected>2026</option>
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
+                        <option value="2023">2023</option>
+                        <option value="2022">2022</option>
+                        <option value="2021">2021</option>
+                        <option value="2020">2020</option>
+                        <option value="2019">2019</option>
+                        <option value="2018">2018</option>
+                        <option value="2017">2017</option>
+                        <option value="2016">2016</option>
+                        <option value="2015">2015</option>
+                    </select>
+                </div>
+                <div class="sel-group">
+                    <label>GRAND PRIX</label>
+                    <select id="selRace">
+                        <option value="Monaco" selected>Loading...</option>
+                    </select>
+                </div>
+                <div class="sel-group">
+                    <label>SESSION</label>
+                    <select id="selSession">
+                        <option value="R" selected>Race</option>
+                        <option value="Q">Qualifying</option>
+                        <option value="FP1">Practice 1</option>
+                        <option value="FP2">Practice 2</option>
+                        <option value="FP3">Practice 3</option>
+                        <option value="S">Sprint</option>
+                        <option value="SQ">Sprint Shootout</option>
+                    </select>
+                </div>
+            </div>
+            <div class="live-clock" id="liveClock">--:--:--</div>
+        </div>
+    </header>
+
+    <!-- VIEWS CONTAINER -->
+    <main id="viewsContainer">
+        <!-- UPCOMING RACE BANNER -->
+        <div id="upcomingRaceBanner" class="upcoming-banner hidden"></div>
+
+        <!-- ========== VIEW: RACE ========== -->
+        <section class="view active" id="view-race">
+            <div class="view-header">
+                <h2 class="view-title">RACE WEEKEND DATA</h2>
+                <p class="view-desc">Complete race classification, qualifying results, lap analysis and position changes
+                </p>
+            </div>
+            <div class="race-grid">
+                <div class="panel race-results-panel">
+                    <h2>RACE CLASSIFICATION</h2>
+                    <div id="raceResultsTable" class="table-scroll">
+                        <div class="empty-state">Select a season and Grand Prix, then data will load automatically</div>
+                    </div>
+                </div>
+                <div class="panel quali-panel">
+                    <h2>QUALIFYING RESULTS</h2>
+                    <div id="qualiResultsTable" class="table-scroll">
+                        <div class="empty-state">Qualifying times will appear here</div>
+                    </div>
+                </div>
+                <div class="panel dnf-panel grid-full-width">
+                    <h2>⚠️ RETIREMENTS & DNFs</h2>
+                    <div id="dnfTracker" class="table-scroll">
+                        <div class="empty-state">Retirements and DNFs will appear here</div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h2>SPEED TRAP ANALYSIS <span class="unit">km/h</span></h2>
+                    <div id="chartSpeedTraps" class="chart-box-lg"></div>
+                </div>
+                <div class="panel">
+                    <h2>GRID VS FINISH</h2>
+                    <div id="chartGridVsFinish" class="chart-box-lg"></div>
+                </div>
+                <div class="panel laptimes-panel">
+                    <h2>LAP TIME PROGRESSION</h2>
+                    <div id="chartLapTimes" class="chart-box-lg"></div>
+                </div>
+                <div class="panel positions-panel">
+                    <h2>POSITION CHANGES</h2>
+                    <div id="chartPositions" class="chart-box-lg"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== VIEW: STRATEGY ========== -->
+        <section class="view" id="view-strategy">
+            <div class="view-header">
+                <h2 class="view-title">RACE STRATEGY ANALYSIS</h2>
+                <p class="view-desc">Tyre compound strategies, stint durations, track evolution and weather conditions throughout the race</p>
+            </div>
+            <div class="strat-grid">
+                <div class="panel strat-gantt-panel">
+                    <h2>TYRE STRATEGY</h2>
+                    <div id="chartStints" class="chart-box-xl">
+                        <div class="empty-state">Tyre strategy data will load here</div>
+                    </div>
+                </div>
+                <div class="strat-row-2">
+                    <div class="panel weather-panel">
+                        <h2>WEATHER CONDITIONS</h2>
+                        <div id="chartWeather" class="chart-box">
+                            <div class="empty-state">Weather data will load here</div>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <h2>TRACK EVOLUTION</h2>
+                        <div id="chartTrackEvolution" class="chart-box">
+                            <div class="empty-state">Track evolution data will load here</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== VIEW: ANALYSIS ========== -->
+        <section class="view" id="view-analysis">
+            <div class="view-header">
+                <h2 class="view-title">DEEP RACE ANALYSIS</h2>
+                <p class="view-desc">Fastest laps board, tyre degradation curves, pit stop analysis and race pace comparison</p>
+            </div>
+            <div class="analysis-grid">
+                <div class="panel analysis-fl-panel">
+                    <h2>FASTEST LAPS BOARD</h2>
+                    <div id="fastestLapsTable" class="table-scroll">
+                        <div class="empty-state">Fastest lap data will load here</div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h2>PIT STOP ANALYSIS</h2>
+                    <div id="pitStopsTable" class="table-scroll">
+                        <div class="empty-state">Pit stop data will load here</div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h2>TYRE DEGRADATION <span class="unit">lap time vs tyre age</span></h2>
+                    <div id="chartDegradation" class="chart-box-lg">
+                        <div class="empty-state">Degradation curves will load here</div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h2>RACE PACE COMPARISON <span class="unit">cleaned lap times</span></h2>
+                    <div id="chartRacePace" class="chart-box-lg">
+                        <div class="empty-state">Race pace data will load here</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== VIEW: CHAMPIONSHIP ========== -->
+        <section class="view" id="view-championship">
+            <div class="view-header">
+                <h2 class="view-title">CHAMPIONSHIP STANDINGS</h2>
+                <p class="view-desc">Driver and constructor world championship standings, points progression, and teammate head-to-head</p>
+            </div>
+            <div class="champ-grid">
+                <div class="panel champ-drivers-panel">
+                    <h2>DRIVER STANDINGS</h2>
+                    <div id="driverStandings" class="table-scroll">
+                        <div class="empty-state">Driver standings will load here</div>
+                    </div>
+                </div>
+                <div class="panel champ-constructors-panel">
+                    <h2>CONSTRUCTOR STANDINGS</h2>
+                    <div id="constructorStandings" class="table-scroll">
+                        <div class="empty-state">Constructor standings will load here</div>
+                    </div>
+                </div>
+            </div>
+            <div class="champ-grid" style="margin-top:16px">
+                <div class="panel" style="grid-column: 1 / -1">
+                    <h2>CHAMPIONSHIP POINTS PROGRESSION</h2>
+                    <div id="chartPointsProgression" class="chart-box-lg">
+                        <div class="empty-state">Points progression will load here</div>
+                    </div>
+                </div>
+            </div>
+            <div class="champ-grid champ-compare-grid" style="margin-top:16px;">
+                <div class="panel">
+                    <h2>TEAMMATE HEAD-TO-HEAD</h2>
+                    <div id="teammateComparison">
+                        <div class="empty-state">Teammate comparison data will load here</div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h2>CUSTOM DRIVER SEASON COMPARATOR</h2>
+                    <div class="driver-compare-controls" style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center;">
+                        <select id="selCompDr1" class="select-field" style="flex: 1; padding: 6px;"></select>
+                        <span style="font-weight: bold; color: var(--accent);">VS</span>
+                        <select id="selCompDr2" class="select-field" style="flex: 1; padding: 6px;"></select>
+                        <button class="btn btn-primary" id="btnCompareDrivers" style="padding: 6px 12px; cursor: pointer;">Compare</button>
+                    </div>
+                    <div id="customDriverComparison">
+                        <div class="empty-state">Select two drivers and click Compare</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== VIEW: TELEMETRY ========== -->
+        <section class="view" id="view-telemetry">
+            <div class="view-header">
+                <h2 class="view-title">TELEMETRY COMPARISON</h2>
+                <p class="view-desc">Fastest lap telemetry overlay — compare speed, throttle, brake, gear, RPM and DRS traces
+                    between two drivers</p>
+            </div>
+            <div class="tel-controls">
+                <div class="driver-sel">
+                    <div class="sel-group driver-group">
+                        <label>DRIVER 1 <span class="ref-tag">REF</span></label>
+                        <div class="select-row" style="display: flex; gap: 8px;">
+                            <select id="selDr1" style="flex: 1;">
+                                <option value="VER" selected>VER</option>
+                            </select>
+                            <select id="selLap1" style="flex: 1;">
+                                <option value="fastest" selected>Fastest Lap</option>
+                            </select>
+                        </div>
+                        <div class="driver-color-bar" id="dr1ColorBar"></div>
+                    </div>
+                    <div class="vs-badge">VS</div>
+                    <div class="sel-group driver-group">
+                        <label>DRIVER 2 <span class="cmp-tag">CMP</span></label>
+                        <div class="select-row" style="display: flex; gap: 8px;">
+                            <select id="selDr2" style="flex: 1;">
+                                <option value="LEC" selected>LEC</option>
+                            </select>
+                            <select id="selLap2" style="flex: 1;">
+                                <option value="fastest" selected>Fastest Lap</option>
+                            </select>
+                        </div>
+                        <div class="driver-color-bar" id="dr2ColorBar"></div>
+                    </div>
+                </div>
+                <button class="analyze-btn" id="btnAnalyze" onclick="loadTelemetry()">
+                    <span>▶ COMPARE</span>
+                </button>
+            </div>
+
+            <div class="tel-grid">
+                <div class="tel-main">
+                    <div class="panel" id="panelSpeed">
+                        <h2>SPEED TRACE <span class="unit">km/h</span></h2>
+                        <div id="chartSpeed" class="chart-box"></div>
+                    </div>
+                    <div class="panel" id="panelDelta">
+                        <h2>LAP DELTA <span class="unit">seconds</span></h2>
+                        <div id="chartDelta" class="chart-box"></div>
+                    </div>
+                    <div class="panel" id="panelRPM">
+                        <h2>ENGINE RPM</h2>
+                        <div id="chartRPM" class="chart-box"></div>
+                    </div>
+                    <div class="panel" id="panelGear">
+                        <h2>GEAR</h2>
+                        <div id="chartGear" class="chart-box"></div>
+                    </div>
+                    <div class="panel" id="panelInputs">
+                        <h2>THROTTLE & BRAKE <span class="unit">%</span></h2>
+                        <div id="chartInputs" class="chart-box"></div>
+                    </div>
+                    <div class="panel" id="panelDRS">
+                        <h2>DRS ACTIVATION</h2>
+                        <div id="chartDRS" class="chart-box"></div>
+                    </div>
+                </div>
+                <div class="tel-side">
+                    <div class="panel track-panel">
+                        <h2>2D CIRCUIT SPEED MAP</h2>
+                        <div id="chartTrack" class="track-box"></div>
+                    </div>
+                    <div class="panel track3d-panel">
+                        <h2>3D CIRCUIT ELEVATION PROFILE</h2>
+                        <div id="chartTrack3d" class="track-box"></div>
+                    </div>
+                    <div class="panel sector-panel">
+                        <h2>SECTOR DELTA</h2>
+                        <div id="sectorTable" class="sector-box"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== VIEW: LIVE ========== -->
+        <section class="view" id="view-live">
+            <div class="view-header">
+                <h2 class="view-title"><span class="live-pulse"></span> LIVE SESSION DATA</h2>
+                <p class="view-desc">Real-time timing, race control, weather and pit activity powered by OpenF1 API</p>
+            </div>
+
+            <!-- Session Status Banner -->
+            <div class="session-banner" id="sessionBanner">
+                <div class="banner-status" id="bannerStatus">
+                    <span class="status-dot"></span>
+                    <span id="bannerSessionName">Loading session data...</span>
+                </div>
+                <div class="banner-meta" id="bannerMeta"></div>
+                <button class="refresh-btn" id="btnRefreshLive" onclick="pollLiveData()">↻ REFRESH</button>
+            </div>
+
+            <div class="live-grid">
+                <!-- Main: Timing Board -->
+                <div class="panel live-timing-panel">
+                    <h2>TIMING BOARD</h2>
+                    <div id="liveTimingBoard" class="table-scroll">
+                        <div class="empty-state">Waiting for session data...</div>
+                    </div>
+                </div>
+
+                <!-- Side panels -->
+                <div class="live-side">
+                    <div class="panel live-rc-panel">
+                        <h2>🚩 RACE CONTROL</h2>
+                        <div id="raceControlFeed" class="feed-scroll">
+                            <div class="empty-state">Race control messages</div>
+                        </div>
+                    </div>
+
+                    <div class="panel live-weather-panel">
+                        <h2>🌡️ WEATHER</h2>
+                        <div id="liveWeatherWidget">
+                            <div class="empty-state">Weather data</div>
+                        </div>
+                    </div>
+
+                    <div class="panel live-pit-panel">
+                        <h2>🛞 PIT ACTIVITY</h2>
+                        <div id="pitActivityFeed" class="feed-scroll">
+                            <div class="empty-state">Pit stop activity</div>
+                        </div>
+                    </div>
+
+                    <div class="panel live-radio-panel">
+                        <h2>📻 TEAM RADIO</h2>
+                        <div id="teamRadioFeed" class="feed-scroll">
+                            <div class="empty-state">Team radio messages</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== VIEW: REPLAY ========== -->
+        <section class="view" id="view-replay">
+            <div class="view-header">
+                <h2 class="view-title">RACE REPLAY</h2>
+                <p class="view-desc">Watch the race unfold with real-time driver positions on a rendered track. Click drivers to view telemetry. Press H for controls legend.</p>
+            </div>
+
+            <div class="replay-wrapper">
+                <!-- Loading Overlay -->
+                <div id="replayLoadingOverlay" class="replay-loading-overlay">
+                    <div class="replay-loading-content">
+                        <div class="spinner-ring"><div></div><div></div><div></div></div>
+                        <div class="replay-loading-text">Preparing replay data…</div>
+                    </div>
+                </div>
+
+                <!-- Canvas + Sidebar -->
+                <div class="replay-layout">
+                    <div class="replay-canvas-area">
+                        <canvas id="replayCanvas"></canvas>
+                    </div>
+
+                    <!-- Leaderboard Sidebar -->
+                    <div class="replay-sidebar">
+                        <div class="replay-sidebar-header">
+                            <h3>LEADERBOARD</h3>
+                            <span class="replay-sidebar-hint">Click to select · Shift+click multi</span>
+                        </div>
+                        <div id="replayLeaderboard" class="replay-leaderboard-list"></div>
+                    </div>
+                </div>
+
+                <!-- Playback Controls -->
+                <div class="replay-controls">
+                    <div class="replay-controls-left">
+                        <button class="replay-btn" id="replayRestartBtn" onclick="ReplayEngine.restart()" title="Restart (R)">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2v5h5L4.5 4.5A5.5 5.5 0 1 1 2.5 8H1a7 7 0 1 0 2.8-5.6L2 2z"/></svg>
+                        </button>
+                        <button class="replay-btn" onclick="ReplayEngine.rewind()" title="Rewind 5s (←)">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><polygon points="8,1 1,8 8,15"/><polygon points="15,1 8,8 15,15"/></svg>
+                        </button>
+                        <button class="replay-btn replay-btn-play" id="replayPlayBtn" onclick="ReplayEngine.togglePlayPause()" title="Play/Pause (SPACE)">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><polygon points="3,1 14,8 3,15"/></svg>
+                        </button>
+                        <button class="replay-btn" onclick="ReplayEngine.fastForward()" title="Forward 5s (→)">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><polygon points="1,1 8,8 1,15"/><polygon points="8,1 15,8 8,15"/></svg>
+                        </button>
+                    </div>
+                    <div class="replay-controls-center">
+                        <button class="replay-btn replay-btn-speed" onclick="ReplayEngine.cycleSpeed()" title="Cycle Speed (↑/↓)">
+                            <span id="replaySpeedLabel">1x</span>
+                        </button>
+                    </div>
+                    <div class="replay-controls-right">
+                        <button class="replay-btn replay-btn-sm" onclick="ReplayEngine.toggleDriverNames()" title="Toggle Names (L)">L</button>
+                        <button class="replay-btn replay-btn-sm" onclick="ReplayEngine.toggleDRS()" title="Toggle DRS (D)">D</button>
+                        <button class="replay-btn replay-btn-sm" onclick="ReplayEngine.toggleProgressBarDisplay()" title="Toggle Progress (B)">B</button>
+                        <button class="replay-btn replay-btn-sm" onclick="ReplayEngine.toggleLegend()" title="Toggle Legend (H)">H</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <span>RACEPULSE v4.0 — Formula 1 Data & Analytics Platform</span>
+        <span>Data: 2015–2025 • Powered by FastF1, Jolpica-F1 & OpenF1 API</span>
+    </footer>
+
+    <script src="/static/replay.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+
+</html>

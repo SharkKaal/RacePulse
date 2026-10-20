@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+fastf1
+pandas
+numpy>=2.0.0,<2.3.0
+scipy>=1.14.0,<1.15.0
+httpx
+matplotlib
+plotly
+pytest

@@ -1,0 +1,1839 @@
+/* ============================================================
+   RacePulse — Premium F1 Telemetry Dashboard
+   Dark Carbon-Fiber Aesthetic
+   ============================================================ */
+
+/* --- 1. CSS Variables --- */
+:root {
+  --bg-primary: #08080c;
+  --bg-secondary: #0e0e14;
+  --bg-panel: rgba(14, 14, 22, 0.65);
+  --f1-red: #e10600;
+  --accent-cyan: #00d2be;
+  --accent-orange: #ff8700;
+  --accent-purple: #a855f7;
+  --accent-green: #22c55e;
+  --accent-yellow: #fbbf24;
+  --text-primary: #f0f0f5;
+  --text-secondary: #8888a0;
+  --text-dim: #555570;
+  --border-color: rgba(255, 255, 255, 0.06);
+
+  /* Tyre Colors */
+  --tyre-soft: #e10600;
+  --tyre-medium: #fbbf24;
+  --tyre-hard: #a0a0a0;
+  --tyre-inter: #22c55e;
+  --tyre-wet: #3b82f6;
+
+  /* Timing Colors */
+  --time-purple: #a855f7;
+  --time-green: #22c55e;
+  --time-yellow: #fbbf24;
+  --time-loss: #e10600;
+  --time-gain: #22c55e;
+}
+
+/* --- 2. Reset & Base --- */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  min-height: 100vh;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* --- 3. Custom Scrollbar --- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--f1-red);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff1a1a;
+}
+
+/* --- 4. Loading Overlay --- */
+#loading {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  transition: opacity 0.5s ease;
+}
+
+#loading.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.spinner-ring {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.spinner-ring div {
+  position: absolute;
+  border: 3px solid transparent;
+  border-radius: 50%;
+  animation: spinRing 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+.spinner-ring div:nth-child(1) {
+  width: 72px;
+  height: 72px;
+  top: 4px;
+  left: 4px;
+  border-top-color: var(--f1-red);
+  animation-delay: -0.45s;
+}
+
+.spinner-ring div:nth-child(2) {
+  width: 56px;
+  height: 56px;
+  top: 12px;
+  left: 12px;
+  border-top-color: var(--accent-cyan);
+  animation-delay: -0.3s;
+}
+
+.spinner-ring div:nth-child(3) {
+  width: 40px;
+  height: 40px;
+  top: 20px;
+  left: 20px;
+  border-top-color: var(--accent-orange);
+  animation-delay: -0.15s;
+}
+
+@keyframes spinRing {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loader-text {
+  margin-top: 24px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 3px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.dots::after {
+  content: '';
+  animation: dots 1.5s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0%   { content: ''; }
+  25%  { content: '.'; }
+  50%  { content: '..'; }
+  75%  { content: '...'; }
+  100% { content: ''; }
+}
+
+/* --- 5. Header / Top Bar --- */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 56px;
+  background: rgba(8, 8, 12, 0.95);
+  border-bottom: 1px solid var(--border-color);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  text-decoration: none;
+  user-select: none;
+}
+
+.logo-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.logo-text .race {
+  color: var(--f1-red);
+}
+
+.logo-text .pulse {
+  color: #ffffff;
+}
+
+.logo-divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border-color);
+  margin: 0 8px;
+}
+
+.nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.nav-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  white-space: nowrap;
+}
+
+.nav-tab:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.nav-tab.active {
+  color: var(--f1-red);
+}
+
+.nav-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 14px;
+  right: 14px;
+  height: 2px;
+  background: var(--f1-red);
+  box-shadow: 0 0 8px rgba(225, 6, 0, 0.5);
+}
+
+.tab-icon {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.session-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sel-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sel-group label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.5rem;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.sel-group select {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 4px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  border-radius: 2px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.3s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.sel-group select:hover,
+.sel-group select:focus {
+  border-color: var(--f1-red);
+}
+
+.sel-group select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.live-clock {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  min-width: 70px;
+  text-align: right;
+}
+
+/* --- 6. Views System --- */
+main {
+  padding: 20px 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.view {
+  display: none;
+  animation: fadeIn 0.4s ease;
+}
+
+.view.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.view-header {
+  margin-bottom: 20px;
+}
+
+.view-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  padding-left: 14px;
+  position: relative;
+}
+
+.view-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 70%;
+  background: var(--f1-red);
+  box-shadow: 0 0 8px rgba(225, 6, 0, 0.4);
+}
+
+.view-desc {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-top: 4px;
+  padding-left: 14px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.empty-state .empty-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.empty-state .empty-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+}
+
+.empty-state .empty-text {
+  font-size: 0.75rem;
+  max-width: 360px;
+}
+
+/* --- 7. Panels --- */
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s ease;
+}
+
+.panel:hover {
+  border-top-color: var(--f1-red);
+}
+
+.panel::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 20px 20px 0;
+  border-color: transparent rgba(225, 6, 0, 0.08) transparent transparent;
+}
+
+.panel h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+  padding-left: 14px;
+  position: relative;
+}
+
+.panel h2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  background: var(--f1-red);
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(225, 6, 0, 0.5);
+}
+
+.unit {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  margin-left: 4px;
+}
+
+/* --- 8. Telemetry View --- */
+.tel-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.driver-sel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.driver-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.driver-group label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.55rem;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.driver-group select {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 5px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  border-radius: 2px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.driver-group select:focus {
+  border-color: var(--f1-red);
+}
+
+.driver-color-bar {
+  width: 3px;
+  height: 22px;
+  border-radius: 1px;
+}
+
+.ref-tag {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.5rem;
+  letter-spacing: 1px;
+  color: var(--accent-cyan);
+  padding: 2px 6px;
+  border: 1px solid rgba(0, 210, 190, 0.3);
+  background: rgba(0, 210, 190, 0.08);
+}
+
+.cmp-tag {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.5rem;
+  letter-spacing: 1px;
+  color: var(--accent-orange);
+  padding: 2px 6px;
+  border: 1px solid rgba(255, 135, 0, 0.3);
+  background: rgba(255, 135, 0, 0.08);
+}
+
+.vs-badge {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--f1-red);
+  letter-spacing: 2px;
+}
+
+.analyze-btn {
+  padding: 8px 22px;
+  background: var(--f1-red);
+  color: #fff;
+  border: none;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  transition: all 0.3s ease;
+  box-shadow: 0 0 16px rgba(225, 6, 0, 0.3);
+  margin-left: auto;
+}
+
+.analyze-btn:hover {
+  background: #ff1a1a;
+  box-shadow: 0 0 24px rgba(225, 6, 0, 0.5);
+  transform: translateY(-1px);
+}
+
+.analyze-btn:active {
+  transform: translateY(0);
+}
+
+.tel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.tel-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tel-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chart-box {
+  height: 220px;
+  position: relative;
+}
+
+.chart-box canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.chart-box-lg {
+  height: 350px;
+  position: relative;
+}
+
+.chart-box-lg canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.chart-box-xl {
+  height: 450px;
+  position: relative;
+}
+
+.chart-box-xl canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.track-box {
+  height: 280px;
+  position: relative;
+}
+
+.track-box canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.sector-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* --- 9. Race View --- */
+.race-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.grid-full-width {
+  grid-column: span 2;
+}
+
+/* --- 10. Strategy View --- */
+.strat-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.strat-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* --- 11. Championship View --- */
+.champ-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* --- 12. Tables — F1 Timing Board Style --- */
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 2px;
+}
+
+th {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--f1-red);
+  white-space: nowrap;
+}
+
+td {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  padding: 7px 10px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.01);
+  white-space: nowrap;
+}
+
+tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+td.pos {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+  font-size: 0.75rem;
+  text-align: center;
+  min-width: 30px;
+}
+
+td.pos.p1 {
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+td.pos.p2 {
+  color: #c0c0c0;
+  text-shadow: 0 0 6px rgba(192, 192, 192, 0.3);
+}
+
+td.pos.p3 {
+  color: #cd7f32;
+  text-shadow: 0 0 6px rgba(205, 127, 50, 0.3);
+}
+
+td.driver-name {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+}
+
+.team-color-dot {
+  display: inline-block;
+  width: 4px;
+  height: 14px;
+  border-radius: 1px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.time-purple {
+  color: var(--time-purple) !important;
+  text-shadow: 0 0 6px rgba(168, 85, 247, 0.4);
+}
+
+.time-green {
+  color: var(--time-green) !important;
+}
+
+.time-yellow {
+  color: var(--time-yellow) !important;
+}
+
+.time-loss {
+  color: var(--time-loss) !important;
+}
+
+.time-gain {
+  color: var(--time-gain) !important;
+}
+
+.points-bar {
+  display: inline-block;
+  height: 4px;
+  background: var(--f1-red);
+  box-shadow: 0 0 6px rgba(225, 6, 0, 0.4);
+  border-radius: 2px;
+  vertical-align: middle;
+  transition: width 0.5s ease;
+}
+
+/* --- 13. Tyre Badges --- */
+.tyre-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-radius: 2px;
+  line-height: 1.4;
+}
+
+.tyre-SOFT {
+  background: rgba(225, 6, 0, 0.15);
+  color: var(--tyre-soft);
+  border: 1px solid rgba(225, 6, 0, 0.3);
+}
+
+.tyre-MEDIUM {
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--tyre-medium);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.tyre-HARD {
+  background: rgba(160, 160, 160, 0.1);
+  color: var(--tyre-hard);
+  border: 1px solid rgba(160, 160, 160, 0.25);
+}
+
+.tyre-INTERMEDIATE {
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--tyre-inter);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.tyre-WET {
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--tyre-wet);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+/* --- 14. Footer --- */
+footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+footer a {
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+footer a:hover {
+  color: var(--f1-red);
+}
+
+/* --- 16. Analysis View --- */
+.analysis-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* --- 17. Live View --- */
+.live-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--f1-red);
+  border-radius: 50%;
+  display: inline-block;
+  margin-left: 4px;
+  animation: livePulse 1.5s ease infinite;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.4; transform: scale(0.8); }
+}
+
+.live-pulse {
+  width: 8px;
+  height: 8px;
+  background: var(--f1-red);
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+  animation: livePulse 1.5s ease infinite;
+  box-shadow: 0 0 8px rgba(225, 6, 0, 0.6);
+}
+
+.session-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  background: rgba(14, 14, 22, 0.9);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--accent-green);
+}
+
+.session-banner.yellow {
+  border-left-color: var(--accent-yellow);
+}
+
+.session-banner.red {
+  border-left-color: var(--f1-red);
+}
+
+.session-banner.sc {
+  border-left-color: var(--accent-orange);
+}
+
+.banner-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  animation: livePulse 1.5s ease infinite;
+}
+
+.banner-meta {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.refresh-btn {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.65rem;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.refresh-btn:hover {
+  border-color: var(--f1-red);
+  color: var(--text-primary);
+}
+
+.live-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 16px;
+}
+
+
+.live-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feed-scroll {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* --- 18. Race Control Feed --- */
+.rc-message {
+  padding: 8px 12px;
+  border-left: 3px solid var(--text-dim);
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(255, 255, 255, 0.02);
+  transition: background 0.2s;
+}
+
+.rc-message:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.rc-message.flag-green {
+  border-left-color: var(--accent-green);
+}
+
+.rc-message.flag-yellow {
+  border-left-color: var(--accent-yellow);
+}
+
+.rc-message.flag-red {
+  border-left-color: var(--f1-red);
+}
+
+.rc-message.flag-sc {
+  border-left-color: var(--accent-orange);
+}
+
+.rc-time {
+  color: var(--text-dim);
+  font-size: 0.65rem;
+  margin-bottom: 2px;
+}
+
+.rc-text {
+  color: var(--text-primary);
+}
+
+/* --- 19. Weather Widget --- */
+.weather-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.weather-item {
+  text-align: center;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+}
+
+.weather-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.weather-label {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  letter-spacing: 1.5px;
+  margin-top: 4px;
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* --- 20. Pit Feed --- */
+.pit-entry {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.75rem;
+}
+
+.pit-driver {
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  min-width: 35px;
+}
+
+.pit-detail {
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', monospace;
+  flex: 1;
+}
+
+.pit-duration {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 0.7rem;
+  color: var(--accent-cyan);
+}
+
+/* --- 21. Radio Feed --- */
+.radio-entry {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.75rem;
+}
+
+.radio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.radio-driver {
+  font-weight: 700;
+}
+
+.radio-lap {
+  color: var(--text-dim);
+  font-size: 0.65rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.radio-audio {
+  margin-top: 4px;
+}
+
+.radio-play-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-color);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  margin-top: 6px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.radio-play-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(255, 46, 91, 0.2);
+}
+
+.radio-play-btn.playing {
+  background: rgba(46, 204, 113, 0.1);
+  border-color: #2ecc71;
+  color: #2ecc71;
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.2);
+}
+
+.waveform-dot {
+  width: 6px;
+  height: 6px;
+  background-color: var(--text-dim);
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.radio-play-btn.playing .waveform-dot {
+  background-color: #2ecc71;
+}
+
+@keyframes pulse-green {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.waveform-dot.pulse {
+  animation: pulse-green 1.2s infinite ease-in-out;
+}
+
+/* --- 22. Teammate Head-to-Head --- */
+.h2h-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.h2h-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  padding: 16px;
+}
+
+/* --- Driver Compare Custom Controls --- */
+.driver-compare-controls select {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.3s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.driver-compare-controls select:hover,
+.driver-compare-controls select:focus {
+  border-color: var(--accent);
+}
+
+.driver-compare-controls select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.driver-compare-controls button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 6px 16px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+}
+
+.driver-compare-controls button:hover {
+  background: #ff527b;
+  box-shadow: 0 0 10px rgba(255, 46, 91, 0.4);
+}
+
+.h2h-team {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.h2h-drivers {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.h2h-driver {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.h2h-vs {
+  color: var(--f1-red);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+}
+
+.h2h-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.8rem;
+}
+
+.h2h-label {
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+}
+
+.h2h-bar-container {
+  display: flex;
+  height: 6px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.h2h-bar-left {
+  background: var(--accent-cyan);
+  height: 100%;
+  transition: width 0.5s;
+}
+
+.h2h-bar-right {
+  background: var(--accent-orange);
+  height: 100%;
+  transition: width 0.5s;
+}
+
+/* --- 15 & 23. Responsive --- */
+@media (max-width: 1200px) {
+  .tel-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .race-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .champ-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .live-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analysis-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .strat-row-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  header {
+    flex-direction: column;
+    height: auto;
+    padding: 12px 16px;
+    gap: 10px;
+  }
+
+  .header-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .nav-tabs {
+    flex-wrap: wrap;
+    gap: 0;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .session-selector {
+    flex-wrap: wrap;
+  }
+
+  main {
+    padding: 14px 12px;
+  }
+
+  .live-side {
+    flex-direction: column;
+  }
+
+  .h2h-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- 15. Upcoming Race Countdown Banner --- */
+.upcoming-banner {
+  background: linear-gradient(135deg, rgba(20, 20, 35, 0.95), rgba(10, 10, 15, 0.98));
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--f1-red);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+}
+
+.upcoming-banner.hidden {
+  display: none !important;
+}
+
+.upcoming-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 16px;
+}
+
+.upcoming-info h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: #fff;
+  margin: 0 0 4px 0;
+  letter-spacing: 1px;
+}
+
+.upcoming-info h3 {
+  font-size: 1.05rem;
+  color: var(--f1-red);
+  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.upcoming-info p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+/* Countdown Card */
+.upcoming-countdown {
+  background: rgba(225, 6, 0, 0.08);
+  border: 1px solid rgba(225, 6, 0, 0.2);
+  border-radius: 8px;
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.countdown-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.countdown-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #fff;
+  display: flex;
+  gap: 12px;
+}
+
+.countdown-unit {
+  color: var(--f1-red);
+  font-size: 1.2rem;
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+/* Weekend Schedule Timeline */
+.upcoming-schedule {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.upcoming-schedule h2 {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 8px 0;
+  color: #fff;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.schedule-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 14px 16px;
+  transition: all 0.3s ease;
+}
+
+.schedule-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(225, 6, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+.schedule-card.active {
+  background: rgba(225, 6, 0, 0.05);
+  border-color: rgba(225, 6, 0, 0.4);
+}
+
+.session-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.session-time {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.session-local {
+  font-size: 0.8rem;
+  color: var(--accent-green);
+  font-weight: 600;
+}
+
+/* DNF badges */
+.status-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.dsq {
+  background: rgba(231, 76, 60, 0.15);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.status-badge.ret {
+  background: rgba(230, 126, 34, 0.15);
+  color: #e67e22;
+  border: 1px solid rgba(230, 126, 34, 0.3);
+}
+
+.status-badge.dns {
+  background: rgba(149, 165, 166, 0.15);
+  color: #95a5a6;
+  border: 1px solid rgba(149, 165, 166, 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   24. RACE REPLAY VIEW
+   ═══════════════════════════════════════════════════════════════ */
+
+.replay-wrapper {
+  position: relative;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+/* Loading Overlay */
+.replay-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 8, 12, 0.95);
+  transition: opacity 0.4s ease;
+}
+
+.replay-loading-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.replay-loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.replay-loading-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  text-align: center;
+  max-width: 340px;
+}
+
+/* Layout: Canvas + Sidebar */
+.replay-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  min-height: 520px;
+}
+
+.replay-canvas-area {
+  position: relative;
+  background: var(--bg-primary);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.replay-canvas-area canvas {
+  display: block;
+}
+
+/* Sidebar */
+.replay-sidebar {
+  background: rgba(8, 8, 12, 0.9);
+  border-left: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.replay-sidebar-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.replay-sidebar-header h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 4px 0;
+  padding-left: 14px;
+  position: relative;
+}
+
+.replay-sidebar-header h3::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  background: var(--f1-red);
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(225, 6, 0, 0.5);
+}
+
+.replay-sidebar-hint {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+  padding-left: 14px;
+}
+
+.replay-leaderboard-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+/* Leaderboard Rows */
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-left: 3px solid transparent;
+  font-size: 0.78rem;
+}
+
+.lb-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.lb-row.selected {
+  background: rgba(225, 6, 0, 0.08);
+  border-left-color: var(--f1-red);
+}
+
+.lb-row.out {
+  opacity: 0.45;
+}
+
+.lb-pos {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 800;
+  font-size: 0.72rem;
+  min-width: 22px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.lb-row:nth-child(1) .lb-pos { color: #ffd700; text-shadow: 0 0 6px rgba(255, 215, 0, 0.3); }
+.lb-row:nth-child(2) .lb-pos { color: #c0c0c0; }
+.lb-row:nth-child(3) .lb-pos { color: #cd7f32; }
+
+.lb-color {
+  width: 3px;
+  height: 16px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.lb-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.lb-gap {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  min-width: 36px;
+  text-align: right;
+}
+
+.lb-tyre {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.5rem;
+  font-weight: 700;
+  border-radius: 2px;
+  color: #000;
+  flex-shrink: 0;
+}
+
+.lb-status-out {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--f1-red);
+  padding: 1px 6px;
+  border: 1px solid rgba(225, 6, 0, 0.3);
+  background: rgba(225, 6, 0, 0.08);
+  border-radius: 2px;
+}
+
+/* Playback Controls Bar */
+.replay-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(8, 8, 12, 0.95);
+  border-top: 1px solid var(--border-color);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.replay-controls-left,
+.replay-controls-center,
+.replay-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.replay-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.replay-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--f1-red);
+  color: var(--text-primary);
+}
+
+.replay-btn:active {
+  transform: scale(0.95);
+}
+
+.replay-btn-play {
+  width: 44px;
+  height: 44px;
+  background: var(--f1-red);
+  border-color: var(--f1-red);
+  color: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 16px rgba(225, 6, 0, 0.3);
+}
+
+.replay-btn-play:hover {
+  background: #ff1a1a;
+  box-shadow: 0 0 24px rgba(225, 6, 0, 0.5);
+  color: #fff;
+}
+
+.replay-btn-speed {
+  width: auto;
+  padding: 0 14px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.replay-btn-sm {
+  width: 30px;
+  height: 30px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+}
+
+/* Safety Car pulsing glow animation */
+@keyframes scPulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(255, 165, 0, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(255, 165, 0, 0.7); }
+}
+
+/* Progress bar label */
+.replay-progress-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .replay-layout {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .replay-sidebar {
+    border-left: none;
+    border-top: 1px solid var(--border-color);
+    max-height: 280px;
+  }
+
+  .replay-canvas-area {
+    min-height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .replay-controls {
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .replay-layout {
+    min-height: auto;
+  }
+
+  .replay-canvas-area {
+    min-height: 300px;
+  }
+
+  .replay-sidebar {
+    max-height: 220px;
+  }
+}
