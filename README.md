@@ -17,7 +17,7 @@ RacePulse is a Formula 1 data analytics and visualization platform built with **
 Ensure your virtual environment is active, or use `.\.venv\Scripts\python.exe`.
 
 ### 1. Run the Telemetry Comparison Script (Matplotlib GUI)
-Runs the standalone comparison between Max Verstappen (`VER`) and Charles Leclerc (`LEC`) for the Monaco 2024 Grand Prix:
+
 
 ```bash
 .\.venv\Scripts\python.exe main.py
